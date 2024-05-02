@@ -6,6 +6,16 @@ import zipfile
 import argparse
 import subprocess
 import math
+import re
+
+def update_script_version(version):
+    with open('package_addon.py', 'r') as file:
+        content = file.read()
+
+    new_content = re.sub(r'v\d+\.\d+', f'v{version}', content)
+
+    with open('package_addon.py', 'w') as file:
+        file.write(new_content)
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
@@ -62,7 +72,7 @@ def create_zip_file(meta):
 def git_operations(meta, test=False):
     # Push a new release
     subprocess.run(['git', 'add', '.'], check=True)
-    subprocess.run(['git', 'commit', '-m', f'v{meta["version"]}'], check=True)
+    subprocess.run(['git', 'commit', '-m', f'Update to version v{meta["version"]}'], check=True)
     if test:
         subprocess.run(['git', 'checkout', '-b', f'{addon_dir}-{meta["version"]}-test'], check=True)
     subprocess.run(['git', 'tag', f'v{meta["version"]}'], check=True)
@@ -70,15 +80,19 @@ def git_operations(meta, test=False):
 
 if args.c:
     meta = update_meta_file(0.1)
+    update_script_version(meta['version'])
     create_manifest_file()
     create_zip_file(meta)
     git_operations(meta)
 
 if args.t:
     meta = update_meta_file(0.1)
+    update_script_version(meta['version'])
     create_manifest_file()
     create_zip_file(meta)
     git_operations(meta, test=True)
+    create_github_release(meta)
+    create_github_fork('shmuelsash/AnkingTables')
 
 if args.l:
     meta = update_meta_file(0.01)
