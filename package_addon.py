@@ -72,9 +72,9 @@ def create_zip_file(meta):
 def git_operations(meta, test=False):
     # Push a new release
     subprocess.run(['git', 'add', '.'], check=True)
-    subprocess.run(['git', 'commit', '-m', f'Update to version v{meta["version"]}'], check=True)
+    subprocess.run(['git', 'commit', '-m', check=True)
     if test:
-        subprocess.run(['git', 'checkout', '-b', f'{addon_dir}-{meta["version"]}-test'], check=True)
+        subprocess.run(['git', 'checkout', '-b', check=True)
     subprocess.run(['git', 'tag', f'v{meta["version"]}'], check=True)
     subprocess.run(['git', 'push', '--tags'], check=True)
 
