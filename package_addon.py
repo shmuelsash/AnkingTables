@@ -20,61 +20,22 @@ addon_dir = 'anking_tables'
 # Path to the add-on directory
 addon_path = os.path.join(os.getcwd(), addon_dir)
 
-# Update 'meta.json' file
-meta_file_path = os.path.join(addon_path, 'meta.json')
-with open(meta_file_path, 'r+') as f:
-    meta = json.load(f)
-    if args.l:
-        meta['version'] = round(float(meta['version']) + 0.01, 2)  # Increment in the hundredths place
-    else:
-        meta['version'] = round(float(meta['version']) + 0.1, 1)  # Increment in the tenths place
-    f.seek(0)
-    json.dump(meta, f)
-    f.truncate()
-
-# Name of the output .ankiaddon file
-output_file = f'{addon_dir}_v{meta["version"]}.ankiaddon'
-
-# Create a 'manifest.json' file
-manifest = {
-    "package": addon_dir,
-    "name": "Anking Tables",
-    "conflicts": [],
-    "mod": int(time.time())
-}
-
-with open(os.path.join(addon_path, 'manifest.json'), 'w') as f:
-    json.dump(manifest, f)
-
-# Create a zip file (overwrites existing file if it exists)
-with zipfile.ZipFile(output_file, 'w') as zipf:
-    for root, dirs, files in os.walk(addon_path):
-        for file in files:
-            if '__pycache__' not in root:
-                zipf.write(os.path.join(root, file),
-                           os.path.relpath(os.path.join(root, file), addon_path))
-
 def round_down(f, decimals):
     factor = 10.0 ** decimals
     return math.floor(f * factor) / factor
 
-if args.c or args.t:
-    # Push a new release
+def update_meta_file(increment):
     # Update 'meta.json' file
     meta_file_path = os.path.join(addon_path, 'meta.json')
     with open(meta_file_path, 'r+') as f:
         meta = json.load(f)
-        if args.l:
-            meta['version'] = round_down(float(meta['version']) + 0.01, 2)  # Increment in the hundredths place
-        elif args.c or args.t:
-            meta['version'] = round_down(float(meta['version']) + 0.1, 1)  # Increment in the tenths place
+        meta['version'] = round_down(float(meta['version']) + increment, 2 if increment == 0.01 else 1)
         f.seek(0)
         json.dump(meta, f)
         f.truncate()
+    return meta
 
-    # Name of the output .ankiaddon file
-    output_file = f'{addon_dir}_v{meta["version"]}.ankiaddon'
-
+def create_manifest_file():
     # Create a 'manifest.json' file
     manifest = {
         "package": addon_dir,
@@ -86,6 +47,10 @@ if args.c or args.t:
     with open(os.path.join(addon_path, 'manifest.json'), 'w') as f:
         json.dump(manifest, f)
 
+def create_zip_file(meta):
+    # Name of the output .ankiaddon file
+    output_file = f'{addon_dir}_v{meta["version"]}.ankiaddon'
+
     # Create a zip file (overwrites existing file if it exists)
     with zipfile.ZipFile(output_file, 'w') as zipf:
         for root, dirs, files in os.walk(addon_path):
@@ -94,8 +59,28 @@ if args.c or args.t:
                     zipf.write(os.path.join(root, file),
                                os.path.relpath(os.path.join(root, file), addon_path))
 
+def git_operations(meta, test=False):
     # Push a new release
     subprocess.run(['git', 'add', '.'], check=True)
     subprocess.run(['git', 'commit', '-m', f'v{meta["version"]}'], check=True)
+    if test:
+        subprocess.run(['git', 'checkout', '-b', f'{addon_dir}-{meta["version"]}-test'], check=True)
     subprocess.run(['git', 'tag', f'v{meta["version"]}'], check=True)
     subprocess.run(['git', 'push', '--tags'], check=True)
+
+if args.c:
+    meta = update_meta_file(0.1)
+    create_manifest_file()
+    create_zip_file(meta)
+    git_operations(meta)
+
+if args.t:
+    meta = update_meta_file(0.1)
+    create_manifest_file()
+    create_zip_file(meta)
+    git_operations(meta, test=True)
+
+if args.l:
+    meta = update_meta_file(0.01)
+    create_manifest_file()
+    create_zip_file(meta)
