@@ -1,0 +1,27 @@
+Metadata-Version: 2.1
+Name: aqt
+Version: 24.04.1
+License: AGPL-3
+Classifier: License :: OSI Approved :: GNU Affero General Public License v3 or
+ later (AGPLv3+)
+Requires-Python: >=3.9
+Requires-Dist: beautifulsoup4
+Requires-Dist: flask
+Requires-Dist: flask_cors
+Requires-Dist: jsonschema
+Requires-Dist: requests
+Requires-Dist: send2trash
+Requires-Dist: waitress>=2.0.0
+Requires-Dist: psutil; sys.platform == "win32"
+Requires-Dist: pywin32; sys.platform == "win32"
+Requires-Dist: pip-system-certs
+Requires-Dist: anki==24.04.1
+Provides-Extra: qt5
+Requires-Dist: pyqt5>=5.14; extra == 'qt5'
+Requires-Dist: pyqtwebengine; extra == 'qt5'
+Provides-Extra: qt6
+Requires-Dist: pyqt6>=6.2; extra == 'qt6'
+Requires-Dist: pyqt6-webengine>=6.2; extra == 'qt6'
+
+Please see https://apps.ankiweb.net
+
