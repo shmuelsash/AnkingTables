@@ -1,3 +1,6 @@
 
 /.idea
 /venv
+/.venv
+runanki.py
+__pycache__

@@ -28,7 +28,7 @@ args = parser.parse_args()
 addon_dir = 'anking_tables'
 
 # Path to the add-on directory
-addon_path = os.path.join(os.getcwd(), addon_dir)
+addon_path = os.path.join(os.getcwd(), 'src', addon_dir)
 
 def round_down(f, decimals):
     factor = 10.0 ** decimals
@@ -72,9 +72,9 @@ def create_zip_file(meta):
 def git_operations(meta, test=False):
     # Push a new release
     subprocess.run(['git', 'add', '.'], check=True)
-    subprocess.run(['git', 'commit', '-m', check=True)
+    subprocess.run(['git', 'commit', '-m'], check=True)
     if test:
-        subprocess.run(['git', 'checkout', '-b', check=True)
+        subprocess.run(['git', 'checkout', '-b'], check=True)
     subprocess.run(['git', 'tag', f'v{meta["version"]}'], check=True)
     subprocess.run(['git', 'push', '--tags'], check=True)
 

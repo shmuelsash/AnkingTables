@@ -1,50 +1,13 @@
-import os
-
 from bs4 import BeautifulSoup
 
-from anki.hooks import addHook
-from aqt.editor import Editor
-from aqt import gui_hooks
 
-def parse_html(editor):
+def parse_html(html):
     """Parse the current field's HTML and return a BeautifulSoup object."""
-    # Ensure that editor.note and editor.currentField exist
-    if editor.note is None or editor.currentField is None:
-        return None
-
-    # Get the current field's HTML
-    html = editor.note.fields[editor.currentField]
-
     # Parse the HTML with BeautifulSoup
     soup = BeautifulSoup(html, 'html.parser')
 
     return soup
 
-def update_html(editor, soup):
-    """Update the current field's HTML with the modified BeautifulSoup object."""
-    # Ensure that editor.note and editor.currentField exist
-    if editor.note is None or editor.currentField is None:
-        return
-
-    # Update the current field's HTML
-    editor.note.fields[editor.currentField] = str(soup)
-    editor.loadNote()
-
-def on_edit_table(editor):
-    """Process the current field's HTML when the EditTable button is clicked."""
-    # Get the current field's HTML
-    html = editor.note.fields[editor.currentField]
-
-    # Parse the HTML with BeautifulSoup
-    soup = BeautifulSoup(html, 'html.parser')
-
-    # Process each table in the HTML
-    for table in soup.find_all('table'):
-        process_table(table)
-
-    # Update the current field's HTML
-    editor.note.fields[editor.currentField] = str(soup)
-    editor.loadNote()
 
 def process_table(table):
     """Process a table element to remove all styling and set the class to 'one' and border to '1'."""
@@ -113,6 +76,7 @@ def process_table(table):
                     tag.unwrap()
     return skip_rows
 
+
 def deheader_first_column(editor, soup):
     for table in soup.find_all('table'):
         skip_rows = process_table(table)
@@ -120,7 +84,7 @@ def deheader_first_column(editor, soup):
             first_cell = row.find(['th', 'td'])
             if first_cell:
                 first_cell.name = 'td'
-    update_html(editor, soup)
+
 
 def headerize_first_column(editor, soup):
     for table in soup.find_all('table'):
@@ -131,42 +95,3 @@ def headerize_first_column(editor, soup):
                     first_cell.name = 'th'
                     for tag in first_cell.find_all(['b', 'u', 'i']):
                         tag.unwrap()
-    update_html(editor, soup)
-
-def button1_func(editor):
-    soup = parse_html(editor)
-    if soup:
-        for table in soup.find_all('table'):
-            process_table(table)
-        deheader_first_column(editor, soup)
-
-def button2_func(editor):
-    soup = parse_html(editor)
-    if soup:
-        for table in soup.find_all('table'):
-            process_table(table)
-        headerize_first_column(editor, soup)
-
-def add_buttons(buttons, editor):
-    """Add buttons to the editor toolbar."""
-    icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'editor_table.png')
-    btn1 = editor.addButton(
-        icon=icon_path,
-        cmd="HeaderRowOnly",
-        func=lambda _: button1_func(editor),
-        tip="Convert to table with a header row ONLY",
-        keys=None,
-    )
-    buttons.append(btn1)
-
-    icon_path_2 = os.path.join(os.path.dirname(__file__), 'icons', 'editor_table_2.png')
-    btn2 = editor.addButton(
-        icon=icon_path_2,
-        cmd="HeaderColumnRow",
-        func=lambda _: button2_func(editor),
-        tip="Convert to table with a header row & column",
-        keys=None,
-    )
-    buttons.append(btn2)
-
-gui_hooks.editor_did_init_buttons.append(add_buttons)
