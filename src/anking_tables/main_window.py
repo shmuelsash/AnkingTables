@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup
 
 from .utils import process_table, deheader_first_column, headerize_first_column, parse_html
 
+from aqt.qt import debug; debug()
+
 
 # Conditional imports for PyQt5 and PyQt6 compatibility
 try:
@@ -369,14 +371,14 @@ class HtmlViewer(QWidget):
 
         # Save the updated note
         col.update_note(note)  # This will save the changes to the database
-        col.save()  # This will commit the changes to the database
+        col.flush()
 
-        # Retrieve the note again to confirm the update
-        updated_note = col.get_note(note_id)
-        print(f"Updated note field: {updated_note[field_name]}")
+        # Refresh the editor
+        self.editor.loadNote()
 
         # Close the HtmlViewer window
         self.close()
+
 
 def button1_func(self):
     html = self.htmlEditor.toPlainText()
@@ -403,22 +405,7 @@ def button2_func(self):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # Create a dummy Anki main window object
 
-    class DummyMainWindow:
-        def __init__(self):
-            self.pm = DummyProfileManager()
-            self.col = Collection(None)  # Create a new Collection object
-            self.col.setMod()  # Set the modification time
-            self.col.load()  # Load the collection data
-
-        def night_mode(self):
-            return False
-
-    class DummyProfileManager:
-        def night_mode(self):
-            return False
-
-    mw = DummyMainWindow()
+    mw = MainWindow()
     viewer = HtmlViewer("", None, mw)
     sys.exit(app.exec())
