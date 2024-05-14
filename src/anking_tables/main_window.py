@@ -10,8 +10,6 @@ from bs4 import BeautifulSoup
 
 from .utils import process_table, deheader_first_column, headerize_first_column, parse_html
 
-from aqt.qt import debug; debug()
-
 
 # Conditional imports for PyQt5 and PyQt6 compatibility
 try:
@@ -403,9 +401,9 @@ def button2_func(self):
     self.htmlEditor.setPlainText(new_html)
     self.set_html(new_html)
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
 
-    mw = MainWindow()
-    viewer = HtmlViewer("", None, mw)
-    sys.exit(app.exec())
+#     mw = MainWindow()
+#     viewer = HtmlViewer("", None, mw)
+#     sys.exit(app.exec())
