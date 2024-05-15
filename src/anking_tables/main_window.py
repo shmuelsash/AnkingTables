@@ -242,16 +242,9 @@ class HtmlViewer(QWidget):
 
     def set_html(self, html, js_files=None):
         # Access the Anki model by name; ensure 'self.col' is your collection instance
-        anking_note_type = next(
-            (
-                model
-                for model in self.col.models.all()
-                if model["name"].startswith("AnKing")
-            ),
-            None,
-        )
+        anking_note_type = self.col.models.by_name("AnKingOverhaul (AnKing / AnKingMed)")
         if not anking_note_type:
-            print("AnKing note type not found")
+            print("AnKingOverhaul note type not found")
             return
 
         # Get the CSS from the AnKingOverhaul note type
