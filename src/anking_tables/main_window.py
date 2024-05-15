@@ -354,25 +354,22 @@ class HtmlViewer(QWidget):
         # Get the note associated with the card
         note = col.get_note(note_id)
 
-        # Get the current field content
-        current_field_content = note[field_name]
-
-        # Replace the field_html with updated_html in the current field content
-        new_field_content = current_field_content.replace(self.field_html, updated_html)
-
         print(f"Before update: {note[field_name]}")
 
-        # Update the specified field in the note
-        note[field_name] = new_field_content
+        # Replace the first table in the field with the updated table
+        soup = BeautifulSoup(note[field_name], "html.parser")
+        tables = soup.find_all("table")
+        tables[0].replace_with(BeautifulSoup(updated_html, "html.parser"))
+
+        note[field_name] = str(soup)
 
         print(f"After update: {note[field_name]}")
 
         # Save the updated note
         col.update_note(note)  # This will save the changes to the database
-        col.flush()
 
         # Refresh the editor
-        self.editor.loadNote()
+        self.editor.set_note(note)
 
         # Close the HtmlViewer window
         self.close()
