@@ -21,7 +21,6 @@ try:
     from PyQt5.QtCore import QRegularExpression
     from PyQt5.Qt import PYQT_VERSION_STR
 
-    app = QApplication(sys.argv)
     app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 except (ImportError, AttributeError):
     from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow,
@@ -31,10 +30,7 @@ except (ImportError, AttributeError):
     from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon
     from PyQt6.QtCore import QRegularExpression
 
-    app = QApplication(sys.argv)
 
-
-# os.environ["QTWEBENGINE_REMOTE_DEBUGGING"] = "9222"
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -288,8 +284,6 @@ class HtmlViewer(QWidget):
         # Get the note associated with the card
         note = col.get_note(note_id)
 
-        print(f"Before update: {note[field_name]}")
-
         # Replace the first table in the field with the updated table
         soup = BeautifulSoup(note[field_name], "html.parser")
         tables = soup.find_all("table")
@@ -297,10 +291,8 @@ class HtmlViewer(QWidget):
 
         note[field_name] = str(soup)
 
-        print(f"After update: {note[field_name]}")
-
         # Save the updated note
-        col.update_note(note)  # This will save the changes to the database
+        col.update_note(note)
 
         # Refresh the editor
         self.editor.set_note(note)

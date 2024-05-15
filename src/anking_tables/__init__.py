@@ -31,8 +31,6 @@ def open_main_window_func(editor):
 
     card = editor.card
 
-    print(f"Note ID: {note_id}", '\n' f"Field Name: {field_name}")
-
     # Parse the HTML with BeautifulSoup
     soup = BeautifulSoup(field_html, 'html.parser')
 

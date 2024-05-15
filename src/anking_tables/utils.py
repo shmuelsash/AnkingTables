@@ -91,6 +91,13 @@ def headerize_first_column(editor, soup):
         for row in table.find_all('tr'):
             first_cell = row.find(['td', 'th'])
             if first_cell and first_cell.name == 'td':
+                # Check if the first cell is part of a row span
+                previous_row = row.find_previous_sibling('tr')
+                if previous_row:
+                    previous_row_first_cell = previous_row.find(['td', 'th'])
+                    if previous_row_first_cell and previous_row_first_cell.get('rowspan'):
+                        # If the first cell is part of a row span, skip this row
+                        continue
                 if not row.find('th'):
                     first_cell.name = 'th'
                     for tag in first_cell.find_all(['b', 'u', 'i']):
