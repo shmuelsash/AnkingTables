@@ -1,21 +1,15 @@
 import os
-from aqt import mw
-from anki import notes
-from anki.cards import Card
-from anki.collection import Collection
 
+from aqt import gui_hooks, mw
 from bs4 import BeautifulSoup
-
-from aqt import gui_hooks
-from .main_window import HtmlViewer
-from .utils import process_table, deheader_first_column, headerize_first_column, parse_html
-
-
 try:
     from PyQt6.QtGui import QAction
     from PyQt6.QtWidgets import QMessageBox
 except ImportError:
     from PyQt5.QtWidgets import QAction, QMessageBox
+
+from .main_window import HtmlViewer
+from .utils import process_table, deheader_first_column, headerize_first_column, parse_html
 
 
 def open_main_window_func(editor):
@@ -56,65 +50,16 @@ def open_main_window_func(editor):
     viewer.show()
 
 
-# def update_html(editor, soup):
-#     """Update the current field's HTML with the modified BeautifulSoup object."""
-#     # Ensure that editor.note and editor.currentField exist
-#     if editor.note is None or editor.currentField is None:
-#         return
-#
-#     # Update the current field's HTML
-#     editor.note.fields[editor.currentField] = str(soup)
-#     editor.loadNote()
-
-
-# def on_edit_table(editor):
-#     """Process the current field's HTML when the EditTable button is clicked."""
-#     # Get the current field's HTML
-#     html = editor.note.fields[editor.currentField]
-#
-#     # Parse the HTML with BeautifulSoup
-#     soup = BeautifulSoup(html, 'html.parser')
-#
-#     # Process each table in the HTML
-#     for table in soup.find_all('table'):
-#         process_table(table)
-#
-#     # Update the current field's HTML
-#     editor.note.fields[editor.currentField] = str(soup)
-#     editor.loadNote()
-
-
 def add_buttons(buttons, editor):
-    """Add buttons to the editor toolbar."""
-    # icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'editor_table.png')
-    # btn1 = editor.addButton(
-    #     icon=icon_path,
-    #     cmd="HeaderRowOnly",
-    #     func=lambda _: button1_func(editor),
-    #     tip="Convert to table with a header row ONLY",
-    #     keys=None,
-    # )
-    # buttons.append(btn1)
-    #
-    # icon_path_2 = os.path.join(os.path.dirname(__file__), 'icons', 'editor_table_2.png')
-    # btn2 = editor.addButton(
-    #     icon=icon_path_2,
-    #     cmd="HeaderColumnRow",
-    #     func=lambda _: button2_func(editor),
-    #     tip="Convert to table with a header row & column",
-    #     keys=None,
-    # )
-    # buttons.append(btn2)
-
-    icon_path_3 = os.path.join(os.path.dirname(__file__), 'icons', 'th_td_button_3.png')
-    btn3 = editor.addButton(
-        icon=icon_path_3,
+    icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'edit_tables.png')
+    btn = editor.addButton(
+        icon=icon_path,
         cmd="OpenMainWindow",
         func=lambda _: open_main_window_func(editor),
         tip="Open Table Editor",
         keys=None,
     )
-    buttons.append(btn3)
+    buttons.append(btn)
 
 
 gui_hooks.editor_did_init_buttons.append(add_buttons)

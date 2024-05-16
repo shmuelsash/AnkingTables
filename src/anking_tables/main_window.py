@@ -1,34 +1,24 @@
-import sys
 import os
+
 import aqt
 from aqt import mw
-import logging
-
 from aqt.webview import AnkiWebView
-from anki.collection import Collection
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
-from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, escape_search_text
-
-
-# Conditional imports for PyQt5 and PyQt6 compatibility
+# PyQt5 and PyQt6 compatibility
 try:
-    from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow,
-                                 QDockWidget, QDesktopWidget, QFrame)
-    from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-    from PyQt5.QtCore import QUrl, Qt, QT_VERSION_STR
+    from PyQt5.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
     from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon
-    from PyQt5.QtCore import QRegularExpression
-    from PyQt5.Qt import PYQT_VERSION_STR
-
+    from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
+    from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QDesktopWidget, QFrame, QMessageBox
     app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 except (ImportError, AttributeError):
-    from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow,
-                                 QDockWidget, QFrame)
-    from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtCore import QUrl, Qt, QT_VERSION_STR
+    from PyQt6.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
     from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon
-    from PyQt6.QtCore import QRegularExpression
+    from PyQt6.QtWebEngineWidgets import QWebEngineView
+    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox
+
+from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, contains_credits
 
 
 class MainWindow(QMainWindow):
@@ -45,16 +35,6 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.html_viewer)
         self.setWindowTitle("Table Editor")
-
-        # # Resize the main window to a larger size
-        # self.resize(1200, 800)
-
-        # # Create an instance of the InspectorDockWidget
-        # self.inspector_dock = InspectorDockWidget(self)
-        # # Add the inspector dock widget to the main window
-        # self.addDockWidget(Qt.RightDockWidgetArea, self.inspector_dock)
-        # # Set the inspected page to the web view's page
-        # self.inspector_dock.setInspectedPage(self.html_viewer.webView.page())
 
 
 class HtmlHighlighter(QSyntaxHighlighter):
@@ -78,22 +58,10 @@ class HtmlHighlighter(QSyntaxHighlighter):
                 self.setFormat(match.capturedStart(), match.capturedLength(), format)
 
 
-# class InspectorDockWidget(QDockWidget):
-#     def __init__(self, parent=None):
-#         super().__init__("Inspector", parent)
-#         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-#
-#         # Create a QWebEngineView to serve as the inspector
-#         self.inspector = QWebEngineView(self)
-#         self.setWidget(self.inspector)
-#
-#     def setInspectedPage(self, page):
-#         self.inspector.page().setInspectedPage(page)
-
-
 class HtmlViewer(QWidget):
     def __init__(self, field_html, card, main_window, col, editor, fieldName, note_id):
         super().__init__()
+        self.initial_html = None
         self.webView = None
         self.highlighter = None
         self.htmlEditor = None
@@ -133,11 +101,11 @@ class HtmlViewer(QWidget):
             button.setFixedSize(25, 25)
             if i == 0:
                 button.clicked.connect(lambda: button1_func(self))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'editor_table.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'gui_table_1.png')))
                 button.setToolTip("Convert to table with a header row ONLY")
             elif i == 1:
                 button.clicked.connect(lambda: button2_func(self))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'editor_table_2.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'gui_table_2.png')))
                 button.setToolTip("Convert to table with a header row & column")
             toolbar.addWidget(button)
         toolbar.addStretch(1)
@@ -169,14 +137,6 @@ class HtmlViewer(QWidget):
         font.setPointSize(12.5)
         self.htmlEditor.setFont(font)
 
-        # def resizeEvent(self, event):
-        #     new_width = event.size().width()
-        #     new_font_size = new_width * 0.02
-        #     font = QFont()
-        #     self.setPointSize(new_font_size)
-        #     self.htmlEditor.setFont(font)
-        #     super().resizeEvent(event)
-
         # Apply the syntax highlighter to the QTextEdit widget
         self.highlighter = HtmlHighlighter(self.htmlEditor.document())
 
@@ -199,9 +159,10 @@ class HtmlViewer(QWidget):
 
         apply_to_all_button = QPushButton("Apply to All")
         apply_to_all_button.clicked.connect(
-            lambda: self.apply_changes_to_all(mw.col, self.original_tables, self.htmlEditor.toPlainText()))
+            lambda: self.apply_changes_to_all(mw.col, self.htmlEditor.toPlainText()))
 
         cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(self.close)
 
         bottom_buttons.addWidget(apply_button)
         bottom_buttons.addWidget(apply_to_all_button)
@@ -233,11 +194,12 @@ class HtmlViewer(QWidget):
         self.show()
 
         # Connect text changes to the update function
-        self.htmlEditor.textChanged.connect(self.update_html)
+        self.htmlEditor.textChanged.connect(self.update_html_viewer)
 
         # Set initial HTML content
-        initial_html = self.htmlEditor.toPlainText()
-        self.set_html(initial_html)
+        self.initial_html = self.htmlEditor.toPlainText()
+        print(f"initial_html has been updated to: {self.initial_html}")
+        self.set_html(self.initial_html)
 
     def set_html(self, html, js_files=None):
         # Access the Anki model by name; ensure 'self.col' is your collection instance
@@ -278,9 +240,9 @@ class HtmlViewer(QWidget):
         # Make sure to adjust 'stdHtml' to suit how your web view accepts parameters
         self.webView.stdHtml(html, css=None, js=js_files, context=self)
 
-    def update_html(self):
+    def update_html_viewer(self):
         html = self.htmlEditor.toPlainText()
-        js_files = ["js/reviewer.js", "js/webview.js"]  # Example list of JavaScript files
+        js_files = ["js/reviewer.js", "js/webview.js"]
         self.set_html(html, js_files)
 
     def apply_changes(self, col, note_id, field_name, updated_html):
@@ -299,6 +261,22 @@ class HtmlViewer(QWidget):
 
         # Refresh the editor
         self.editor.set_note(note)
+
+        # Check if the note contains photo credit & warn user if it does
+        if contains_credits(note[field_name]):
+            msg = QMessageBox()
+            if QT_VERSION_STR[0] == "5":
+                msg.setIcon(QMessageBox.Warning)
+            else:
+                msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("This table contains the photo credits, please move them out of the table.\n\n"
+                        "All formatting applied to photo credit text has been removed.\n"
+                        "You can easily add the proper formatting with the Wrapper meta-addon (use 396502676 to download).")
+            msg.setWindowTitle("Warning")
+            if QT_VERSION_STR[0] == "5":
+                msg.exec_()
+            else:
+                msg.exec()
 
         # Close the HtmlViewer window
         self.close()
@@ -352,67 +330,139 @@ class HtmlViewer(QWidget):
     #     browser.onSearchActivated()
     #     print("Filtered browser view created with the notes marked for update.")
 
-    def apply_changes_to_all(self, col, original_tables, updated_html):
+    # def apply_changes_to_all(self, col, original_tables, updated_html):
+    #     # Find all note IDs that contain the original tables
+    #     nid_list = []
+    #     for original_table in original_tables:
+    #         original_table_str = str(original_table)
+    #         nid_list.extend(col.find_notes(f'"{original_table_str}"'))
+    #
+    #         # If no notes were found, strip HTML tags and search again
+    #         if not nid_list:
+    #             soup = BeautifulSoup(original_table_str, "html.parser")
+    #             text_only = soup.get_text(separator=" ")
+    #             print(f"original_table: {original_table_str}")  # Debugging line
+    #             print(f"text_only: {text_only}")  # Debugging line
+    #             escaped_text_only = escape_search_text(text_only)
+    #             print(f"escaped_text_only: {escaped_text_only}")  # Debugging line
+    #             nid_list.extend(col.find_notes(f'"{escaped_text_only}"'))
+    #
+    #     # Remove duplicates from the list
+    #     nid_list = list(set(nid_list))
+    #     print(f"Original tables: {original_tables}")
+    #     print(f"Updated HTML: {updated_html}")
+    #     print(f"Found {len(nid_list)} notes containing the original table(s).")
+    #     print(f"Note IDs: {nid_list}")
+    #
+    #     # Keep track of updated notes
+    #     updated_notes = []
+    #
+    #     # Iterate over the notes containing the original tables
+    #     for note_id in nid_list:
+    #         note = col.get_note(note_id)
+    #         any_field_updated = False
+    #
+    #         # Check all fields for the original tables
+    #         for field_idx, field_content in enumerate(note.fields):
+    #             print(f"Searching in field index {field_idx} with content: {field_content}")
+    #             new_field_content = field_content
+    #             for original_table in original_tables:
+    #                 print(f"Searching for original table: {original_table}")
+    #                 new_field_content = new_field_content.replace(str(original_table), updated_html)
+    #
+    #             if new_field_content != field_content:
+    #                 note.fields[field_idx] = new_field_content
+    #                 any_field_updated = True
+    #
+    #         if any_field_updated:
+    #             # Save the updated note
+    #             col.update_note(note)
+    #
+    #             # Add the note ID to the list of updated notes
+    #             updated_notes.append(note_id)
+    #             print(f"Note with ID {note_id} updated.")
+    #         else:
+    #             print(f"No instances of the original table found in any field of the note with ID {note_id}.")
+    #
+    #     print(f"Found {len(updated_notes)} notes to update.")
+    #
+    #     # Create a filtered browser view with only the updated notes
+    #     browser = aqt.dialogs.open("Browser", self.editor.mw)
+    #     browser.form.searchEdit.lineEdit().setText("nid:" + ",".join(map(str, updated_notes)))
+    #     browser.onSearchActivated()
+    #     print("Filtered browser view created with the notes marked for update.")
+
+    def apply_changes_to_all(self, col, updated_html):
+        print("Starting to apply changes to all notes...")
+
+        # Parse the initial HTML and find all tables in it
+        original_tables = BeautifulSoup(self.initial_html, "html.parser").find_all("table")
+
         # Find all note IDs that contain the original tables
-        nid_list = []
+        note_ids = []
         for original_table in original_tables:
-            original_table_str = str(original_table)
-            nid_list.extend(col.find_notes(f'"{original_table_str}"'))
-
-            # If no notes were found, strip HTML tags and search again
-            if not nid_list:
-                soup = BeautifulSoup(original_table_str, "html.parser")
-                text_only = soup.get_text(separator=" ")
-                print(f"original_table: {original_table_str}")  # Debugging line
-                print(f"text_only: {text_only}")  # Debugging line
-                escaped_text_only = escape_search_text(text_only)
-                print(f"escaped_text_only: {escaped_text_only}")  # Debugging line
-                nid_list.extend(col.find_notes(f'"{escaped_text_only}"'))
-
+            print(f"Searching for notes containing the table: {str(original_table)}")
+            note_ids.extend(col.find_notes(str(original_table)))
+        print(f"Found {len(note_ids)} notes that contain the original tables.")
         # Remove duplicates from the list
-        nid_list = list(set(nid_list))
-        print(f"Original tables: {original_tables}")
-        print(f"Updated HTML: {updated_html}")
-        print(f"Found {len(nid_list)} notes containing the original table(s).")
-        print(f"Note IDs: {nid_list}")
+        note_ids = list(set(note_ids))
+        print(f"Note IDs: {note_ids}")
+
+        # Iterate over all note IDs
+        for note_id in note_ids:
+            # Get the note associated with the current ID
+            note = col.get_note(note_id)
+
+            # Print the field contents of the note
+            for field_idx, field_content in enumerate(note.fields):
+                print(f"Note ID: {note_id}, Field Index: {field_idx}, Field Content: {field_content}")
+
 
         # Keep track of updated notes
         updated_notes = []
 
-        # Iterate over the notes containing the original tables
-        for note_id in nid_list:
+        # Iterate over all notes
+        for note_id in note_ids:
             note = col.get_note(note_id)
             any_field_updated = False
 
             # Check all fields for the original tables
             for field_idx, field_content in enumerate(note.fields):
-                print(f"Searching in field index {field_idx} with content: {field_content}")
-                new_field_content = field_content
-                for original_table in original_tables:
-                    print(f"Searching for original table: {original_table}")
-                    new_field_content = new_field_content.replace(str(original_table), updated_html)
+                soup = BeautifulSoup(field_content, "html.parser")
+                tables = soup.find_all("table")
 
-                if new_field_content != field_content:
-                    note.fields[field_idx] = new_field_content
-                    any_field_updated = True
+                # Replace each table that matches any of the original tables
+                for table in tables:
+                    for original_table in original_tables:
+                        if str(table) == str(original_table):
+                            print(f"Found a matching table in note {note_id}, field {field_idx}")
+                            print(f"Field content of matching note: {field_content}")
+                            print(f"Soup of matching note: {soup}")
+                            print(f"Replacing the table with: {str(updated_html)}")
+                            table.replace_with(BeautifulSoup(updated_html, "html.parser"))
+                            any_field_updated = True
 
+                # Convert the updated BeautifulSoup object back to a string and assign it back to the field
+                if any_field_updated:
+                    note.fields[field_idx] = str(soup)
+                    print(f"Updated field content: {note.fields[field_idx]}")
+
+            # Save the updated note if any field was updated
             if any_field_updated:
-                # Save the updated note
                 col.update_note(note)
-
-                # Add the note ID to the list of updated notes
                 updated_notes.append(note_id)
-                print(f"Note with ID {note_id} updated.")
-            else:
-                print(f"No instances of the original table found in any field of the note with ID {note_id}.")
+                print(f"Updated note with ID: {note_id}")
 
-        print(f"Found {len(updated_notes)} notes to update.")
+        print(f"Updated a total of {len(updated_notes)} notes.")
 
         # Create a filtered browser view with only the updated notes
         browser = aqt.dialogs.open("Browser", self.editor.mw)
         browser.form.searchEdit.lineEdit().setText("nid:" + ",".join(map(str, updated_notes)))
         browser.onSearchActivated()
-        print("Filtered browser view created with the notes marked for update.")
+        print("Filtered browser view created with the updated notes.")
+
+        # Close the GUI window
+        self.close()
 
 
 def button1_func(self):

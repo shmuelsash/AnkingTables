@@ -2,7 +2,6 @@ from bs4 import BeautifulSoup
 
 
 def parse_html(html):
-    """Parse the current field's HTML and return a BeautifulSoup object."""
     # Parse the HTML with BeautifulSoup
     soup = BeautifulSoup(html, 'html.parser')
 
@@ -104,10 +103,6 @@ def headerize_first_column(editor, soup):
                         tag.unwrap()
 
 
-def escape_search_text(text):
-    # List of special characters in Anki's search syntax
-    special_chars = ['"', ':', '(', ')', 'OR', 'AND', '-', '_']
-    for char in special_chars:
-        # Add a backslash before the special character
-        text = text.replace(char, '\\' + char)
-    return text
+def contains_credits(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    return "Photo credit: " in soup.text
