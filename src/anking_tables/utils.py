@@ -102,3 +102,12 @@ def headerize_first_column(editor, soup):
                     first_cell.name = 'th'
                     for tag in first_cell.find_all(['b', 'u', 'i']):
                         tag.unwrap()
+
+
+def escape_search_text(text):
+    # List of special characters in Anki's search syntax
+    special_chars = ['"', ':', '(', ')', 'OR', 'AND', '-', '_']
+    for char in special_chars:
+        # Add a backslash before the special character
+        text = text.replace(char, '\\' + char)
+    return text
