@@ -47,9 +47,9 @@ def process_table(table):
         if width:
             element['width'] = width
 
-    # Remove all tags that are not 'table', 'tr', 'td', or 'th'
+    # Remove all tags that are not listed
     for tag in table.find_all(True):  # True matches all elements
-        if tag.name not in ['table', 'tr', 'td', 'th', 'br', 'b', 'u', 'i', 'ul', 'li', 'ol', 'img', 'sub', 'sup', 'a']:
+        if tag.name not in ['table', 'tbody', 'tr', 'td', 'th', 'br', 'b', 'u', 'i', 'ul', 'li', 'ol', 'img', 'sub', 'sup', 'a']:
             tag.unwrap()
 
     # Convert the first row of cells into header cells

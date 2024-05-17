@@ -2,6 +2,7 @@ import os
 
 from aqt import gui_hooks, mw
 from bs4 import BeautifulSoup
+
 try:
     from PyQt6.QtGui import QAction
     from PyQt6.QtWidgets import QMessageBox
@@ -16,10 +17,15 @@ def open_main_window_func(editor):
     # Get the note object associated with the current card
     note = editor.note
 
-    # Get the HTML content of the current field
-    field_html = note.fields[editor.currentField]
+    if editor.currentField is not None:
+        field_html = note.fields[editor.currentField]
+    else:
+        # Display a warning message and return
+        QMessageBox.warning(None, "Warning", "Please place your cursor in the field of the table you would like to "
+                                             "edit.")
+        return
 
-    # Get the field name & card id of the selected field
+    # Get the field name & card ID of the selected field
     note_id = note.id
     field_name = note.note_type()['flds'][editor.currentField]['name']
 
@@ -31,10 +37,10 @@ def open_main_window_func(editor):
     # Check if there are any tables in the HTML
     tables = soup.find_all('table')
     if not tables:
-        # If there are no tables, show an error message and return
-        QMessageBox.critical(None, "Error",
-                             "There are no tables in this field, please place the cursor in the field of the table "
-                             "you would like to edit.")
+        # If there are no tables in the selected field, show an error message and return
+        QMessageBox.warning(None, "Error",
+                            "There are no tables in this field, please place the cursor in the field of the table "
+                            "you would like to edit.")
         return
     elif len(tables) > 1:
         # If there are multiple tables, show an error message and return
