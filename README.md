@@ -6,7 +6,7 @@ Convert tables into proper format to submit to the Anking Step Deck
 - [x] Add support for checking if proper table tags are applied
   - [x] Add support for adding/updating table tags 
 - [ ] **PRIORITY**: Add support to update all cards with table being edited
-  - See [this issue]() for more details and to lend your support
+  - See [this issue](https://github.com/shmuelsash/AnkingTables/pull/5) for more details and to lend your support
 - [ ] Add additional table formatting options to toolbar (e.g. bold, italic, underline, etc.)
   - [ ] Add support for editing directly within the table and not directly within HTML
 - [ ] Colorize each HTML tag differently
