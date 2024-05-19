@@ -3,13 +3,17 @@ Convert tables into proper format to submit to the Anking Step Deck
 ### Roadmap (in no specific order)
 #### Any help with these would be greatly appreciated!
 - [x] Add GUI
-- [ ] Add support to update all cards with table being edited
 - [x] Add support for checking if proper table tags are applied
+  - [x] Add support for adding/updating table tags 
+- [ ] **PRIORITY**: Add support to update all cards with table being edited
+  - See [this issue]() for more details and to lend your support
 - [ ] Add additional table formatting options to toolbar (e.g. bold, italic, underline, etc.)
-  - [ ] Add support for editing directly within the table and not html
+  - [ ] Add support for editing directly within the table and not directly within HTML
 - [ ] Colorize each HTML tag differently
 - [ ] Add support for multiple tables in a single field
 - [ ] Add reset button to undo all edits from current session
+- [ ] Add support for adding new tables/adding rows and columns to existing tables
+  - [ ] Add support for table formatting (e.g. merging cells)
 
 
 ### How to Use
