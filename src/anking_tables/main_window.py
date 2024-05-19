@@ -38,6 +38,14 @@ class HtmlHighlighter(QSyntaxHighlighter):
 
 
 class HtmlViewer(QWidget):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is not None:
+            cls._instance.close()
+        cls._instance = super(HtmlViewer, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
     def __init__(self, field_html, card, main_window, col, editor, fieldName, note_id):
         super().__init__()
         self.initial_html = None
