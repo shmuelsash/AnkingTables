@@ -234,7 +234,6 @@ class BottomButtons(QVBoxLayout):
         apply_to_all_button = QPushButton("Apply to All")
         apply_to_all_button.setToolTip("Apply changes to all cards with this table")
         apply_to_all_button.clicked.connect(lambda: self.parent.central_widget.apply_changes_to_all(self.parent.mw.col, self.parent.central_widget.htmlEditor.toPlainText()))
-        apply_to_all_button.setEnabled(False)
 
         cancel_button = QPushButton("Cancel")
         cancel_button.clicked.connect(self.parent.close)
