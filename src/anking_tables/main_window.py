@@ -10,12 +10,12 @@ try:
     from PyQt5.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
     from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon, QKeySequence
     from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-    from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut
+    from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut, QLineEdit, QLabel
 except (ImportError, AttributeError):
     from PyQt6.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
     from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon, QKeySequence, QShortcut
     from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox
+    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox, QLineEdit, QLabel
 
 from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, contains_credits
 
@@ -84,6 +84,8 @@ class HtmlViewer(QWidget):
         self.bottom_buttons = BottomButtons(self)
         main_layout.addLayout(self.bottom_buttons)
 
+        self.update_tag_display()
+
         self.setLayout(main_layout)
         self.setWindowTitle('Edit Anking Tables')
         self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'edit_tables_gui.png')))
@@ -143,12 +145,20 @@ class HtmlViewer(QWidget):
 
         return int(left), int(top), int(window_width), int(window_height)
 
+    def update_tag_display(self):
+        note = self.col.get_note(self.note_id)
+        tags = note.tags
+        table_tags = [tag for tag in tags if tag.startswith('!AK_UpdateTags::Table::')]
+        specific_table_tag = [tag.split('::')[-1] for tag in table_tags]
+        tag_text = ', '.join(specific_table_tag)
+        self.bottom_buttons.tag_edit.setText(tag_text)
+
 
 class HtmlEditor(QTextEdit):
     def __init__(self, parent, initial_html):
         super().__init__(parent)
         self.setPlainText(initial_html)
-        self.setContentsMargins(20, 20, 20, 20)
+        self.setContentsMargins(20, 10, 0, 10)
         font = QFont()
         font.setPointSize(12.5)
         self.setFont(font)
@@ -189,11 +199,32 @@ class TopToolbar(QHBoxLayout):
         self.addStretch(1)
 
 
-class BottomButtons(QHBoxLayout):
+class BottomButtons(QVBoxLayout):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+
+        self.tag_label = QLabel("Table Tag")
+        self.tag_label.setStyleSheet("padding-left: 5px; font-weight: bold;")
+        self.tag_edit = QLineEdit()
+        self.tag_edit.setStyleSheet("padding: 5px; margin: 5px; border-radius: 5")
+        self.tag_edit.setToolTip("<font color='#FADA5E'>Enter table tag here. Spaces will be replaced with "
+                                 "underscores.</font>")
+        self.tag_edit.textChanged.connect(self.update_tag_width)
+
+        self.addWidget(self.tag_label)  # Add the label to the vertical layout
+
+        self.buttons_layout = QHBoxLayout()  # Create a horizontal layout for the buttons and the tag field
+        self.buttons_layout.addWidget(self.tag_edit)  # Add the tag field to the horizontal layout
+        self.buttons_layout.addStretch(1)
+
         self.add_buttons()
+
+    def update_tag_width(self, text):
+        # Calculate the width of the text and set it as the minimum width of the QLineEdit
+        font_metrics = self.tag_edit.fontMetrics()
+        text_width = font_metrics.horizontalAdvance(text) + 15
+        self.tag_edit.setMinimumWidth(text_width)
 
     def add_buttons(self):
         apply_button = QPushButton("Apply")
@@ -208,10 +239,11 @@ class BottomButtons(QHBoxLayout):
         cancel_button = QPushButton("Cancel")
         cancel_button.clicked.connect(self.parent.close)
 
-        self.addStretch(1)
-        self.addWidget(apply_button)
-        self.addWidget(apply_to_all_button)
-        self.addWidget(cancel_button)
+        self.buttons_layout.addWidget(apply_button)  # Add the buttons to the horizontal layout
+        self.buttons_layout.addWidget(apply_to_all_button)
+        self.buttons_layout.addWidget(cancel_button)
+
+        self.addLayout(self.buttons_layout)  # Add the horizontal layout to the vertical layout
 
 
 class CentralWidget(QFrame):
@@ -225,7 +257,7 @@ class CentralWidget(QFrame):
 
         central_layout = QHBoxLayout(self)
         vbox = QVBoxLayout()
-        vbox.setContentsMargins(5, 5, 5, 5)
+        vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.htmlEditor)
         vbox.addWidget(self.webView)
 
@@ -235,6 +267,20 @@ class CentralWidget(QFrame):
 
     def apply_changes(self, editor, col, note_id, field_name, updated_html):
         note = col.get_note(note_id)
+
+        # Remove the old table tags
+        current_tags = [tag for tag in note.tags if tag.startswith('!AK_UpdateTags::Table::')]
+
+        # Get the updated tag
+        updated_tag = "!AK_UpdateTags::Table::" + self.parent.bottom_buttons.tag_edit.text().replace(' ', '_')
+
+        # Check if old_tags is empty or updated_tag is not in old_tags
+        if not current_tags or updated_tag not in current_tags:
+            # Remove all old tags
+            for old_tag in current_tags:
+                note.remove_tag(old_tag)
+            # Add the updated tag to the note
+            note.add_tag(updated_tag)
 
         # Replace the first table in the field with the updated table
         soup = BeautifulSoup(note[field_name], "html.parser")
