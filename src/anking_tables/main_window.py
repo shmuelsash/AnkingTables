@@ -13,9 +13,9 @@ try:
     from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut
 except (ImportError, AttributeError):
     from PyQt6.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
-    from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon, QKeySequence
+    from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon, QKeySequence, QShortcut
     from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox, QShortcut
+    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox
 
 from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, contains_credits
 

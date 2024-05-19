@@ -1,15 +1,17 @@
-Convert unruly tables into proper format to submit to the Anking Step Deck
+Convert tables into proper format to submit to the Anking Step Deck
 
 ### How to Use
 - Select a field with a table in it (you do not need to place the cursor within the table anywhere in the field works)
+- Click the edit button (square with a pencil)
   - Click the **Header Row Button** to format only the top row as a header
   - Click the **Header Row+Column Button** to format both the top row and the first column as headers
+  - Click apply and the table in your selected note will be updated
 
 ### Support
 If you encounter any issues or have suggestions for improvements, please submit an issue on the GitHub repository [here](https://github.com/shmuelsash/AnkingTables/issues)
 
 ### Convert table with header row and column
-
+<img src="https://raw.githubusercontent.com/shmuelsash/AnkingTables/main/ankiweb/click_edit_button.gif" alt="click edit button">
 <img src="https://raw.githubusercontent.com/shmuelsash/AnkingTables/main/ankiweb/tutorial.gif" alt="tutorial">
 
 #### Results
