@@ -1,6 +1,7 @@
 Convert tables into proper format to submit to the Anking Step Deck
 
 ### Roadmap (in no specific order)
+#### Any help with these would be greatly appreciated!
 - [x] Add GUI
 - [ ] Add support for applying edit to all cards with table being edited
 - [ ] Add support for checking if proper table tags are applied
