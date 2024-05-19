@@ -83,16 +83,16 @@ if args.c:
     update_script_version(meta['version'])
     create_manifest_file()
     create_zip_file(meta)
-    git_operations(meta)
+    #git_operations(meta)
 
 if args.t:
     meta = update_meta_file(0.1)
     update_script_version(meta['version'])
     create_manifest_file()
     create_zip_file(meta)
-    git_operations(meta, test=True)
-    create_github_release(meta)
-    create_github_fork('shmuelsash/AnkingTables')
+    #git_operations(meta, test=True)
+    #create_github_release(meta)
+    #create_github_fork('shmuelsash/AnkingTables')
 
 if args.l:
     meta = update_meta_file(0.01)
