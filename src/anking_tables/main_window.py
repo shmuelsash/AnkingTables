@@ -8,15 +8,14 @@ from bs4 import BeautifulSoup
 # PyQt5 and PyQt6 compatibility
 try:
     from PyQt5.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
-    from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon
+    from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon, QKeySequence
     from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-    from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QDesktopWidget, QFrame, QMessageBox
-    #app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+    from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut
 except (ImportError, AttributeError):
     from PyQt6.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
-    from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon
+    from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon, QKeySequence
     from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox
+    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox, QShortcut
 
 from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, contains_credits
 
@@ -79,6 +78,7 @@ class HtmlViewer(QWidget):
 
         self.setLayout(main_layout)
         self.setWindowTitle('Edit Anking Tables')
+        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'edit_tables_gui.png')))
         self.setGeometry(*self.calculate_geometry())
         self.show()
 
@@ -99,9 +99,10 @@ class HtmlViewer(QWidget):
             padding: 0px;
             margin: 0px;
         }
-        .html {
+        .html, td, tr {
             padding: 0px;
-            font-size: 20px;
+            font-size: 22px;
+            text-align: center !important;
         }
         .table {
             width: 100%;
@@ -145,6 +146,14 @@ class HtmlEditor(QTextEdit):
         self.setFont(font)
         self.highlighter = HtmlHighlighter(self.document())
 
+        # Add Ctrl+Z shortcut for undo
+        undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
+        undo_shortcut.activated.connect(self.undo)
+
+        # Add Ctrl+Y shortcut for redo
+        redo_shortcut = QShortcut(QKeySequence("Ctrl+Y"), self)
+        redo_shortcut.activated.connect(self.redo)
+
 
 class TopToolbar(QHBoxLayout):
     def __init__(self, parent):
@@ -180,14 +189,18 @@ class BottomButtons(QHBoxLayout):
 
     def add_buttons(self):
         apply_button = QPushButton("Apply")
+        apply_button.setToolTip("Apply changes to selected card")
         apply_button.clicked.connect(lambda: self.parent.central_widget.apply_changes(self.parent.editor, self.parent.mw.col, self.parent.note_id, self.parent.fieldName, self.parent.central_widget.htmlEditor.toPlainText()))
 
         apply_to_all_button = QPushButton("Apply to All")
+        apply_to_all_button.setToolTip("Apply changes to all cards with this table")
         apply_to_all_button.clicked.connect(lambda: self.parent.central_widget.apply_changes_to_all(self.parent.mw.col, self.parent.central_widget.htmlEditor.toPlainText()))
+        apply_to_all_button.setEnabled(False)
 
         cancel_button = QPushButton("Cancel")
         cancel_button.clicked.connect(self.parent.close)
 
+        self.addStretch(1)
         self.addWidget(apply_button)
         self.addWidget(apply_to_all_button)
         self.addWidget(cancel_button)
@@ -329,8 +342,8 @@ def button1_func(parent):
     html = parent.central_widget.htmlEditor.toPlainText()
     soup = BeautifulSoup(html, 'html.parser')
     for table in soup.find_all('table'):
-        deheader_first_column(parent.editor, soup)
         process_table(table)
+        deheader_first_column(parent.editor, soup)
     new_html = str(soup)
     parent.central_widget.htmlEditor.setPlainText(new_html)
     parent.set_html(new_html)

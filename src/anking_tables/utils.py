@@ -52,6 +52,14 @@ def process_table(table):
         if tag.name not in ['table', 'tbody', 'tr', 'td', 'th', 'br', 'b', 'u', 'i', 'ul', 'li', 'ol', 'img', 'sub', 'sup', 'a']:
             tag.unwrap()
 
+    # Convert rows that span across the whole table to td
+    for row in table.find_all('tr'):
+        cells = row.find_all(['td', 'th'])
+        if len(cells) == 1 and cells[0].get('colspan'):  # If the row is merged across the whole table
+            # Convert the row to td
+            for cell in cells:
+                cell.name = 'td'
+
     # Convert the first row of cells into header cells
     first_row = table.find('tr')
     skip_rows = 1
@@ -90,6 +98,11 @@ def headerize_first_column(editor, soup):
         for row in table.find_all('tr'):
             first_cell = row.find(['td', 'th'])
             if first_cell and first_cell.name == 'td':
+                # Check if the row spans the entire table
+                cells = row.find_all(['td', 'th'])
+                if any(cell.get('colspan') for cell in cells):
+                    # If the row spans the entire table, skip this row
+                    continue
                 # Check if the first cell is part of a row span
                 previous_row = row.find_previous_sibling('tr')
                 if previous_row:
