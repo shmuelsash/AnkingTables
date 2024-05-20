@@ -10,7 +10,7 @@ except ImportError:
     from PyQt5.QtWidgets import QAction, QMessageBox
 
 from .main_window import HtmlViewer
-from .utils import process_table, deheader_first_column, headerize_first_column, parse_html
+from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, is_night_mode
 
 
 def open_main_window_func(editor):
@@ -57,7 +57,7 @@ def open_main_window_func(editor):
 
 
 def add_buttons(buttons, editor):
-    icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'edit_tables.png')
+    icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_toolbar_dark.png' if is_night_mode else 'table_editor_toolbar_light.png')
     btn = editor.addButton(
         icon=icon_path,
         cmd="OpenMainWindow",

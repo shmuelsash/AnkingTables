@@ -1,4 +1,11 @@
+from aqt import mw, dialogs
+
 from bs4 import BeautifulSoup
+
+try:
+    from PyQt6.QtCore import QObject, QEvent, Qt
+except ImportError:
+    from PyQt5.QtCore import QObject, QEvent, Qt
 
 
 def parse_html(html):
@@ -119,3 +126,13 @@ def headerize_first_column(editor, soup):
 def contains_credits(html):
     soup = BeautifulSoup(html, 'html.parser')
     return "Photo credit: " in soup.text
+
+
+def is_night_mode():
+    return "nightMode" in mw.pm.meta["cssState"]
+
+
+def search_text(text):
+    browser = dialogs.open("Browser", mw)
+    browser.form.searchEdit.lineEdit().setText(text)
+    browser.onSearchActivated()

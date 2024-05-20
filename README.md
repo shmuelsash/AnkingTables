@@ -7,15 +7,16 @@ Convert tables into proper format to submit to the Anking Step Deck
   - [x] Add support for adding/updating table tags 
 - [ ] **PRIORITY**: Add support to update all cards with table being edited
   - See [this issue](https://github.com/shmuelsash/AnkingTables/pull/5) for more details and to lend your support
-- [ ] Add additional table formatting options to toolbar (e.g. bold, italic, underline, etc.)
+- [x] Add additional table formatting options to toolbar (e.g. bold, italic, underline, etc.)
   - [ ] Add support for editing directly within the table and not directly within HTML
 - [ ] Colorize each HTML tag differently
 - [ ] Add support for multiple tables in a single field
-- [ ] Add reset button to undo all edits from current session
+- [x] Add reset button to undo all edits from current session
 - [ ] Add support for adding new tables/adding rows and columns to existing tables
   - [ ] Add support for table formatting (e.g. merging cells)
 - [ ] Prevent multiple windows from opening
   - See [this issue](https://github.com/shmuelsash/AnkingTables/pull/6) for more details and to lend your support
+- [x] Add button to search for cards that contain the same table based on keywords (i.e. same table but slightly different wording or formatting)
 
 
 ### How to Use

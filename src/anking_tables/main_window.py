@@ -3,7 +3,8 @@ import os
 import aqt
 # from aqt import mw
 from aqt.webview import AnkiWebView
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
+import re
 
 # PyQt5 and PyQt6 compatibility
 try:
@@ -12,16 +13,16 @@ try:
         QShortcut
     from PyQt6.QtWebEngineWidgets import QWebEngineView
     from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, \
-        QDockWidget, QFrame, QMessageBox, QLineEdit, QLabel
+        QDockWidget, QFrame, QMessageBox, QLineEdit, QLabel, QSizePolicy, QSpacerItem
 except (ImportError, AttributeError):
     from PyQt5.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
     from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon, QKeySequence
     from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
     from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, \
-        QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut, QLineEdit, QLabel
+        QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut, QLineEdit, QLabel, QSizePolicy, QSpacerItem
 
-
-from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, contains_credits
+from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, contains_credits, \
+    is_night_mode, search_text
 
 
 class HtmlHighlighter(QSyntaxHighlighter):
@@ -92,7 +93,7 @@ class HtmlViewer(QWidget):
 
         self.setLayout(main_layout)
         self.setWindowTitle('Edit Anking Tables')
-        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'edit_tables_gui.png')))
+        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_gui_dark.png' if is_night_mode else 'table_editor_gui_light.png')))
         self.setGeometry(*self.calculate_geometry())
         self.show()
 
@@ -176,6 +177,33 @@ class HtmlEditor(QTextEdit):
         redo_shortcut = QShortcut(QKeySequence("Ctrl+Y"), self)
         redo_shortcut.activated.connect(self.redo)
 
+        # Add Ctrl+B shortcut for bold
+        bold_shortcut = QShortcut(QKeySequence("Ctrl+B"), self)
+        bold_shortcut.activated.connect(self.bold)
+
+        # Add Ctrl+I shortcut for italic
+        italic_shortcut = QShortcut(QKeySequence("Ctrl+I"), self)
+        italic_shortcut.activated.connect(self.italic)
+
+        # Add Ctrl+U shortcut for underline
+        underline_shortcut = QShortcut(QKeySequence("Ctrl+U"), self)
+        underline_shortcut.activated.connect(self.underline)
+
+    def bold(self):
+        self.wrap_selected_text_with_tag('b')
+
+    def italic(self):
+        self.wrap_selected_text_with_tag('i')
+
+    def underline(self):
+        self.wrap_selected_text_with_tag('u')
+
+    def wrap_selected_text_with_tag(self, tag):
+        cursor = self.textCursor()
+        selected_text = cursor.selectedText()
+        formatted_text = f'<{tag}>{selected_text}</{tag}>'
+        cursor.insertText(formatted_text)
+
 
 class TopToolbar(QHBoxLayout):
     def __init__(self, parent):
@@ -188,18 +216,46 @@ class TopToolbar(QHBoxLayout):
         buttons = [
             QPushButton(),
             QPushButton(),
+            QPushButton(),
+            QPushButton(),
+            QPushButton(),
+            QPushButton(),
         ]
         for i, button in enumerate(buttons):
             button.setFixedSize(25, 25)
             if i == 0:
-                button.clicked.connect(lambda: button1_func(self.parent))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'gui_table_1.png')))
-                button.setToolTip("Convert to table with a header row ONLY")
+                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.setPlainText(self.parent.initial_html))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons','reset_dark.png' if is_night_mode else 'reset_light.png')))
+                button.setToolTip("Reset to original table")
             elif i == 1:
+                button.clicked.connect(lambda: button1_func(self.parent))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_dark.png' if is_night_mode else 'header_row_light.png')))
+                button.setToolTip("Convert to table with a header row ONLY")
+            elif i == 2:
                 button.clicked.connect(lambda: button2_func(self.parent))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'gui_table_2.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_column_dark.png' if is_night_mode else 'header_row_column_light.png')))
                 button.setToolTip("Convert to table with a header row & column")
+            elif i == 3:
+                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.bold())
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'bold_dark.png' if is_night_mode else 'bold_light.png')))
+                button.setToolTip("Bold")
+            elif i == 4:
+                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.italic())
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'italic_dark.png' if is_night_mode else 'italic_light.png')))
+                button.setToolTip("Italic")
+            elif i == 5:
+                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.underline())
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'underline_dark.png' if is_night_mode else 'underline_light.png')))
+                button.setToolTip("Underline")
             self.addWidget(button)
+            if i == 0 or i == 2:
+                try:
+                    # PyQt6
+                    spacer = QSpacerItem(20, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+                except AttributeError:
+                    # PyQt5
+                    spacer = QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
+                self.addItem(spacer)
         self.addStretch(1)
 
 
@@ -220,20 +276,22 @@ class BottomButtons(QVBoxLayout):
 
         self.buttons_layout = QHBoxLayout()  # Create a horizontal layout for the buttons and the tag field
         self.buttons_layout.addWidget(self.tag_edit)  # Add the tag field to the horizontal layout
-        self.buttons_layout.addStretch(1)
 
         self.add_buttons()
 
     def update_tag_width(self, text):
         # Calculate the width of the text and set it as the minimum width of the QLineEdit
         font_metrics = self.tag_edit.fontMetrics()
-        text_width = font_metrics.horizontalAdvance(text) + 15
+        text_width = font_metrics.horizontalAdvance(text) + 35
         self.tag_edit.setMinimumWidth(text_width)
 
     def add_buttons(self):
         apply_button = QPushButton("Apply")
         apply_button.setToolTip("Apply changes to selected card")
-        apply_button.clicked.connect(lambda: self.parent.central_widget.apply_changes(self.parent.editor, self.parent.mw.col, self.parent.note_id, self.parent.fieldName, self.parent.central_widget.htmlEditor.toPlainText()))
+        apply_button.clicked.connect(
+            lambda: self.parent.central_widget.apply_changes(self.parent.editor, self.parent.mw.col,
+                                                             self.parent.note_id, self.parent.fieldName,
+                                                             self.parent.central_widget.htmlEditor.toPlainText()))
 
         apply_to_all_button = QPushButton("Apply to All")
         apply_to_all_button.setToolTip("Apply changes to all cards with this table")
@@ -243,11 +301,21 @@ class BottomButtons(QVBoxLayout):
         cancel_button = QPushButton("Cancel")
         cancel_button.clicked.connect(self.parent.close)
 
-        self.buttons_layout.addWidget(apply_button)  # Add the buttons to the horizontal layout
+        search_button = QPushButton("Search for Table")
+        search_button.setToolTip("Find additional cards with this table")
+        search_button.clicked.connect(lambda: search_text(extract_html_text(self.parent.initial_html)))
+
+        # Add the buttons to the horizontal layout
+        self.buttons_layout.addStretch(1)
+        self.buttons_layout.addWidget(search_button)
+        self.buttons_layout.addStretch(1)
+
+        self.buttons_layout.addWidget(apply_button)
         self.buttons_layout.addWidget(apply_to_all_button)
         self.buttons_layout.addWidget(cancel_button)
 
-        self.addLayout(self.buttons_layout)  # Add the horizontal layout to the vertical layout
+        # Add the horizontal layout to the vertical layout
+        self.addLayout(self.buttons_layout)
 
 
 class CentralWidget(QFrame):
@@ -416,3 +484,23 @@ def button2_func(parent):
     new_html = str(soup)
     parent.central_widget.htmlEditor.setPlainText(new_html)
     parent.set_html(new_html)
+
+
+def extract_html_text(initial_html):
+    soup = BeautifulSoup(initial_html, 'html.parser')
+
+    # Normalize whitespace within tags
+    for tag in soup.find_all(text=True):
+        tag.replace_with(tag.strip())
+
+    # Insert spaces between tags and text
+    for tag in soup.find_all():
+        if tag.next_sibling and isinstance(tag.next_sibling, NavigableString):
+            tag.next_sibling.replace_with(' ' + tag.next_sibling)
+
+    text = soup.get_text(separator=' ')
+    extracted_text = re.sub(r'\s+', ' ', text).strip()
+
+    # Calculate the midpoint and return the first half
+    midpoint = len(extracted_text) // 2
+    return extracted_text[:midpoint]
