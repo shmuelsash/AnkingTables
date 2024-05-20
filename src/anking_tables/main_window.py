@@ -7,15 +7,19 @@ from bs4 import BeautifulSoup
 
 # PyQt5 and PyQt6 compatibility
 try:
+    from PyQt6.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
+    from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon, QKeySequence, \
+        QShortcut
+    from PyQt6.QtWebEngineWidgets import QWebEngineView
+    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, \
+        QDockWidget, QFrame, QMessageBox, QLineEdit, QLabel
+except (ImportError, AttributeError):
     from PyQt5.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
     from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon, QKeySequence
     from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
-    from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut, QLineEdit, QLabel
-except (ImportError, AttributeError):
-    from PyQt6.QtCore import QRegularExpression, QUrl, Qt, QT_VERSION_STR
-    from PyQt6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QGuiApplication, QIcon, QKeySequence, QShortcut
-    from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, QDockWidget, QFrame, QMessageBox, QLineEdit, QLabel
+    from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QMainWindow, \
+        QDockWidget, QDesktopWidget, QFrame, QMessageBox, QShortcut, QLineEdit, QLabel
+
 
 from .utils import process_table, deheader_first_column, headerize_first_column, parse_html, contains_credits
 
@@ -38,13 +42,13 @@ class HtmlHighlighter(QSyntaxHighlighter):
 
 
 class HtmlViewer(QWidget):
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is not None:
-            cls._instance.close()
-        cls._instance = super(HtmlViewer, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+    # _instance = None
+    #
+    # def __new__(cls, *args, **kwargs):
+    #     if cls._instance is not None:
+    #         cls._instance.close()
+    #     cls._instance = super(HtmlViewer, cls).__new__(cls, *args, **kwargs)
+    #     return cls._instance
 
     def __init__(self, field_html, card, main_window, col, editor, fieldName, note_id):
         super().__init__()
@@ -412,14 +416,3 @@ def button2_func(parent):
     new_html = str(soup)
     parent.central_widget.htmlEditor.setPlainText(new_html)
     parent.set_html(new_html)
-
-
-# def main(field_html, card, mw, col, editor, fieldName, note_id):
-#     app = QApplication.instance()
-#     if app is None:
-#         app = QApplication([])
-#
-#     window = HtmlViewer(field_html, card, mw, col, editor, fieldName, note_id)
-#     window.show()
-#
-#     app.exec_()

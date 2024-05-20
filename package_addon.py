@@ -8,6 +8,8 @@ import subprocess
 import math
 import re
 
+
+# Function to update the version number in the 'package_addon.py' file
 def update_script_version(version):
     with open('package_addon.py', 'r') as file:
         content = file.read()
@@ -16,6 +18,7 @@ def update_script_version(version):
 
     with open('package_addon.py', 'w') as file:
         file.write(new_content)
+
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
@@ -30,9 +33,11 @@ addon_dir = 'anking_tables'
 # Path to the add-on directory
 addon_path = os.path.join(os.getcwd(), 'src', addon_dir)
 
+
 def round_down(f, decimals):
     factor = 10.0 ** decimals
     return math.floor(f * factor) / factor
+
 
 def update_meta_file(increment):
     # Update 'meta.json' file
@@ -44,6 +49,7 @@ def update_meta_file(increment):
         json.dump(meta, f)
         f.truncate()
     return meta
+
 
 def create_manifest_file():
     # Create a 'manifest.json' file
@@ -57,6 +63,7 @@ def create_manifest_file():
     with open(os.path.join(addon_path, 'manifest.json'), 'w') as f:
         json.dump(manifest, f)
 
+
 def create_zip_file(meta):
     # Name of the output .ankiaddon file
     output_file = f'{addon_dir}_v{meta["version"]}.ankiaddon'
@@ -69,6 +76,7 @@ def create_zip_file(meta):
                     zipf.write(os.path.join(root, file),
                                os.path.relpath(os.path.join(root, file), addon_path))
 
+
 def git_operations(meta, test=False):
     # Push a new release
     subprocess.run(['git', 'add', '.'], check=True)
@@ -78,21 +86,22 @@ def git_operations(meta, test=False):
     subprocess.run(['git', 'tag', f'v{meta["version"]}'], check=True)
     subprocess.run(['git', 'push', '--tags'], check=True)
 
+
 if args.c:
     meta = update_meta_file(0.1)
     update_script_version(meta['version'])
     create_manifest_file()
     create_zip_file(meta)
-    #git_operations(meta)
+    # git_operations(meta)
 
 if args.t:
     meta = update_meta_file(0.1)
     update_script_version(meta['version'])
     create_manifest_file()
     create_zip_file(meta)
-    #git_operations(meta, test=True)
-    #create_github_release(meta)
-    #create_github_fork('shmuelsash/AnkingTables')
+    # git_operations(meta, test=True)
+    # create_github_release(meta)
+    # create_github_fork('shmuelsash/AnkingTables')
 
 if args.l:
     meta = update_meta_file(0.01)
