@@ -4,7 +4,6 @@
 
 import os
 import sys
-from PyQt5.QtWidgets import QApplication
 
 try:
     import bazelfixes
@@ -16,13 +15,5 @@ except ImportError:
 
 import aqt
 
-def run_anki():
-    app = QApplication(sys.argv)  # Create the QApplication instance
-
-    if not os.environ.get("ANKI_IMPORT_ONLY"):
-        aqt.run()
-
-    sys.exit(app.exec_())  # Start the Qt event loop
-
-if __name__ == "__main__":
-    run_anki()
+if not os.environ.get("ANKI_IMPORT_ONLY"):
+    aqt.run()
