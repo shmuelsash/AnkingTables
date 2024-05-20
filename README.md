@@ -14,6 +14,8 @@ Convert tables into proper format to submit to the Anking Step Deck
 - [ ] Add reset button to undo all edits from current session
 - [ ] Add support for adding new tables/adding rows and columns to existing tables
   - [ ] Add support for table formatting (e.g. merging cells)
+- [ ] Prevent multiple windows from opening
+  - See [this issue](https://github.com/shmuelsash/AnkingTables/pull/6) for more details and to lend your support
 
 
 ### How to Use
