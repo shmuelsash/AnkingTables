@@ -134,5 +134,6 @@ def is_night_mode():
 
 def search_text(text):
     browser = dialogs.open("Browser", mw)
-    browser.form.searchEdit.lineEdit().setText(text)
+    safe_text = text.replace('"', '\\"')
+    browser.form.searchEdit.lineEdit().setText(f'"{safe_text}"')
     browser.onSearchActivated()
