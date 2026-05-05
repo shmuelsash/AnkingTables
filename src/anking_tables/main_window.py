@@ -93,7 +93,7 @@ class HtmlViewer(QWidget):
 
         self.setLayout(main_layout)
         self.setWindowTitle('Edit Anking Tables')
-        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_gui_dark.png' if is_night_mode else 'table_editor_gui_light.png')))
+        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_gui_dark.png' if is_night_mode() else 'table_editor_gui_light.png')))
         self.setGeometry(*self.calculate_geometry())
         self.show()
 
@@ -165,7 +165,7 @@ class HtmlEditor(QTextEdit):
         self.setPlainText(initial_html)
         self.setContentsMargins(20, 10, 0, 10)
         font = QFont()
-        font.setPointSize(12.5)
+        font.setPointSize(12)
         self.setFont(font)
         self.highlighter = HtmlHighlighter(self.document())
 
@@ -189,6 +189,10 @@ class HtmlEditor(QTextEdit):
         underline_shortcut = QShortcut(QKeySequence("Ctrl+U"), self)
         underline_shortcut.activated.connect(self.underline)
 
+        # Add Ctrl+T shortcut for toggling cell header
+        toggle_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
+        toggle_shortcut.activated.connect(self.toggle_cell_header)
+
     def bold(self):
         self.wrap_selected_text_with_tag('b')
 
@@ -197,6 +201,53 @@ class HtmlEditor(QTextEdit):
 
     def underline(self):
         self.wrap_selected_text_with_tag('u')
+
+    def toggle_cell_header(self):
+        """Toggle the <td>/<th> tag of the cell where the cursor is currently placed."""
+        cursor = self.textCursor()
+        pos = cursor.position()
+        text = self.toPlainText()
+        lower = text.lower()
+
+        before_lower = lower[:pos]
+        td_pos = before_lower.rfind('<td')
+        th_pos = before_lower.rfind('<th')
+
+        if td_pos == -1 and th_pos == -1:
+            return
+
+        if td_pos > th_pos:
+            current_tag = 'td'
+            tag_start = td_pos
+        else:
+            current_tag = 'th'
+            tag_start = th_pos
+
+        new_tag = 'th' if current_tag == 'td' else 'td'
+
+        tag_end = text.find('>', tag_start)
+        if tag_end == -1:
+            return
+        tag_end += 1
+
+        close_tag = f'</{current_tag}>'
+        close_pos = lower.find(close_tag, tag_end)
+        if close_pos == -1:
+            return
+
+        opening = text[tag_start:tag_end]
+        new_opening = re.sub(r'(?i)^<' + current_tag, f'<{new_tag}', opening)
+
+        new_text = (text[:tag_start] +
+                    new_opening +
+                    text[tag_end:close_pos] +
+                    f'</{new_tag}>' +
+                    text[close_pos + len(close_tag):])
+
+        self.setPlainText(new_text)
+        new_cursor = self.textCursor()
+        new_cursor.setPosition(pos)
+        self.setTextCursor(new_cursor)
 
     def wrap_selected_text_with_tag(self, tag):
         cursor = self.textCursor()
@@ -213,49 +264,58 @@ class TopToolbar(QHBoxLayout):
         self.add_toolbar_buttons()
 
     def add_toolbar_buttons(self):
-        buttons = [
-            QPushButton(),
-            QPushButton(),
-            QPushButton(),
-            QPushButton(),
-            QPushButton(),
-            QPushButton(),
-        ]
-        for i, button in enumerate(buttons):
-            button.setFixedSize(25, 25)
-            if i == 0:
-                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.setPlainText(self.parent.initial_html))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons','reset_dark.png' if is_night_mode else 'reset_light.png')))
-                button.setToolTip("Reset to original table")
-            elif i == 1:
-                button.clicked.connect(lambda: button1_func(self.parent))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_dark.png' if is_night_mode else 'header_row_light.png')))
-                button.setToolTip("Convert to table with a header row ONLY")
-            elif i == 2:
-                button.clicked.connect(lambda: button2_func(self.parent))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_column_dark.png' if is_night_mode else 'header_row_column_light.png')))
-                button.setToolTip("Convert to table with a header row & column")
-            elif i == 3:
-                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.bold())
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'bold_dark.png' if is_night_mode else 'bold_light.png')))
-                button.setToolTip("Bold")
-            elif i == 4:
-                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.italic())
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'italic_dark.png' if is_night_mode else 'italic_light.png')))
-                button.setToolTip("Italic")
-            elif i == 5:
-                button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.underline())
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'underline_dark.png' if is_night_mode else 'underline_light.png')))
-                button.setToolTip("Underline")
-            self.addWidget(button)
-            if i == 0 or i == 2:
-                try:
-                    # PyQt6
-                    spacer = QSpacerItem(20, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
-                except AttributeError:
-                    # PyQt5
-                    spacer = QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
-                self.addItem(spacer)
+        def make_btn(tooltip, callback, dark_icon=None, light_icon=None, text=None, width=25):
+            btn = QPushButton()
+            btn.setFixedSize(width, 25)
+            if dark_icon:
+                btn.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons',
+                                               dark_icon if is_night_mode() else light_icon)))
+            if text:
+                btn.setText(text)
+            btn.setToolTip(tooltip)
+            btn.clicked.connect(callback)
+            self.addWidget(btn)
+
+        def add_spacer():
+            try:
+                self.addItem(QSpacerItem(20, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum))
+            except AttributeError:
+                self.addItem(QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Minimum))
+
+        make_btn("Reset to original table",
+                 lambda: self.parent.central_widget.htmlEditor.setPlainText(self.parent.initial_html),
+                 'reset_dark.png', 'reset_light.png')
+        add_spacer()
+
+        make_btn("Convert to table with a header row ONLY",
+                 lambda: button1_func(self.parent),
+                 'header_row_dark.png', 'header_row_light.png')
+
+        make_btn("Convert to table with a header row & column",
+                 lambda: button2_func(self.parent),
+                 'header_row_column_dark.png', 'header_row_column_light.png')
+
+        make_btn("Convert to table with a header column ONLY (no header row)",
+                 lambda: button3_func(self.parent),
+                 text="Col", width=30)
+        add_spacer()
+
+        make_btn("Bold",
+                 lambda: self.parent.central_widget.htmlEditor.bold(),
+                 'bold_dark.png', 'bold_light.png')
+
+        make_btn("Italic",
+                 lambda: self.parent.central_widget.htmlEditor.italic(),
+                 'italic_dark.png', 'italic_light.png')
+
+        make_btn("Underline",
+                 lambda: self.parent.central_widget.htmlEditor.underline(),
+                 'underline_dark.png', 'underline_light.png')
+
+        make_btn("Toggle header formatting for current cell (Ctrl+T)",
+                 lambda: self.parent.central_widget.htmlEditor.toggle_cell_header(),
+                 text="Th")
+
         self.addStretch(1)
 
 
@@ -331,7 +391,6 @@ class CentralWidget(QFrame):
         vbox = QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.htmlEditor)
-        vbox.addWidget(self.webView)
 
         central_layout.addLayout(vbox, 40)
         central_layout.addWidget(self.webView, 60)
@@ -343,16 +402,14 @@ class CentralWidget(QFrame):
         # Remove the old table tags
         current_tags = [tag for tag in note.tags if tag.startswith('!AK_UpdateTags::Table::')]
 
-        # Get the updated tag
-        updated_tag = "!AK_UpdateTags::Table::" + self.parent.bottom_buttons.tag_edit.text().replace(' ', '_')
-
-        # Check if old_tags is empty or updated_tag is not in old_tags
-        if not current_tags or updated_tag not in current_tags:
-            # Remove all old tags
-            for old_tag in current_tags:
-                note.remove_tag(old_tag)
-            # Add the updated tag to the note
-            note.add_tag(updated_tag)
+        # Get the updated tag — skip entirely if the tag field is empty
+        tag_text = self.parent.bottom_buttons.tag_edit.text().strip().replace(' ', '_')
+        if tag_text:
+            updated_tag = "!AK_UpdateTags::Table::" + tag_text
+            if not current_tags or updated_tag not in current_tags:
+                for old_tag in current_tags:
+                    note.remove_tag(old_tag)
+                note.add_tag(updated_tag)
 
         # Replace the first table in the field with the updated table
         soup = BeautifulSoup(note[field_name], "html.parser")
@@ -480,6 +537,23 @@ def button2_func(parent):
     soup = BeautifulSoup(html, 'html.parser')
     for table in soup.find_all('table'):
         process_table(table)
+        headerize_first_column(parent.editor, soup)
+    new_html = str(soup)
+    parent.central_widget.htmlEditor.setPlainText(new_html)
+    parent.set_html(new_html)
+
+
+def button3_func(parent):
+    """Convert to table with a header column ONLY (no header row)."""
+    html = parent.central_widget.htmlEditor.toPlainText()
+    soup = BeautifulSoup(html, 'html.parser')
+    for table in soup.find_all('table'):
+        skip_rows = process_table(table)
+        # Undo the header row(s) that process_table always creates
+        rows = table.find_all('tr')
+        for row in rows[:skip_rows]:
+            for cell in row.find_all('th'):
+                cell.name = 'td'
         headerize_first_column(parent.editor, soup)
     new_html = str(soup)
     parent.central_widget.htmlEditor.setPlainText(new_html)

@@ -57,7 +57,7 @@ def open_main_window_func(editor):
 
 
 def add_buttons(buttons, editor):
-    icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_toolbar_dark.png' if is_night_mode else 'table_editor_toolbar_light.png')
+    icon_path = os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_toolbar_dark.png' if is_night_mode() else 'table_editor_toolbar_light.png')
     btn = editor.addButton(
         icon=icon_path,
         cmd="OpenMainWindow",
