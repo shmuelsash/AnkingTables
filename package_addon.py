@@ -35,8 +35,7 @@ addon_path = os.path.join(os.getcwd(), 'src', addon_dir)
 
 
 def round_down(f, decimals):
-    factor = 10.0 ** decimals
-    return math.floor(f * factor) / factor
+    return round(f, decimals)
 
 
 def update_meta_file(increment):
