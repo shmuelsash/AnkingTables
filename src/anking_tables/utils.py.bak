@@ -129,11 +129,7 @@ def contains_credits(html):
 
 
 def is_night_mode():
-    try:
-        from aqt.theme import theme_manager
-        return theme_manager.night_mode
-    except Exception:
-        return "nightMode" in mw.pm.meta.get("cssState", "")
+    return "nightMode" in mw.pm.meta["cssState"]
 
 
 def search_text(text):

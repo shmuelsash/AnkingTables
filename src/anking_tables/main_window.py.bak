@@ -93,7 +93,7 @@ class HtmlViewer(QWidget):
 
         self.setLayout(main_layout)
         self.setWindowTitle('Edit Anking Tables')
-        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_gui_dark.png' if is_night_mode() else 'table_editor_gui_light.png')))
+        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'table_editor_gui_dark.png' if is_night_mode else 'table_editor_gui_light.png')))
         self.setGeometry(*self.calculate_geometry())
         self.show()
 
@@ -103,6 +103,12 @@ class HtmlViewer(QWidget):
         self.set_html(self.initial_html)
 
     def set_html(self, html, js_files=None):
+        anking_note_type = self.col.models.by_name("AnKingOverhaul (AnKing / AnKingMed)")
+        if not anking_note_type:
+            print("AnKingOverhaul note type not found")
+            return
+
+        anking_css = anking_note_type['css']
         corrected_css = """
         .card {
             padding: 0px;
@@ -116,22 +122,9 @@ class HtmlViewer(QWidget):
         .table {
             width: 100%;
         }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 6px 10px;
-        }
         """
-        anking_note_type = self.col.models.by_name("AnKingOverhaul (AnKing / AnKingMed)")
-        if anking_note_type:
-            combined_css = anking_note_type['css'] + corrected_css
-        else:
-            combined_css = corrected_css
-
-        style_tag = f"<style>{combined_css}</style>"
+        anking_css += corrected_css
+        style_tag = f"<style>{anking_css}</style>"
         html = style_tag + html
 
         self.central_widget.webView.stdHtml(html, css=None, js=js_files, context=self)
@@ -172,7 +165,7 @@ class HtmlEditor(QTextEdit):
         self.setPlainText(initial_html)
         self.setContentsMargins(20, 10, 0, 10)
         font = QFont()
-        font.setPointSizeF(12.5)
+        font.setPointSize(12.5)
         self.setFont(font)
         self.highlighter = HtmlHighlighter(self.document())
 
@@ -232,27 +225,27 @@ class TopToolbar(QHBoxLayout):
             button.setFixedSize(25, 25)
             if i == 0:
                 button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.setPlainText(self.parent.initial_html))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons','reset_dark.png' if is_night_mode() else 'reset_light.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons','reset_dark.png' if is_night_mode else 'reset_light.png')))
                 button.setToolTip("Reset to original table")
             elif i == 1:
                 button.clicked.connect(lambda: button1_func(self.parent))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_dark.png' if is_night_mode() else 'header_row_light.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_dark.png' if is_night_mode else 'header_row_light.png')))
                 button.setToolTip("Convert to table with a header row ONLY")
             elif i == 2:
                 button.clicked.connect(lambda: button2_func(self.parent))
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_column_dark.png' if is_night_mode() else 'header_row_column_light.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'header_row_column_dark.png' if is_night_mode else 'header_row_column_light.png')))
                 button.setToolTip("Convert to table with a header row & column")
             elif i == 3:
                 button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.bold())
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'bold_dark.png' if is_night_mode() else 'bold_light.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'bold_dark.png' if is_night_mode else 'bold_light.png')))
                 button.setToolTip("Bold")
             elif i == 4:
                 button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.italic())
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'italic_dark.png' if is_night_mode() else 'italic_light.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'italic_dark.png' if is_night_mode else 'italic_light.png')))
                 button.setToolTip("Italic")
             elif i == 5:
                 button.clicked.connect(lambda: self.parent.central_widget.htmlEditor.underline())
-                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'underline_dark.png' if is_night_mode() else 'underline_light.png')))
+                button.setIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icons', 'underline_dark.png' if is_night_mode else 'underline_light.png')))
                 button.setToolTip("Underline")
             self.addWidget(button)
             if i == 0 or i == 2:
@@ -308,8 +301,8 @@ class BottomButtons(QVBoxLayout):
         cancel_button = QPushButton("Cancel")
         cancel_button.clicked.connect(self.parent.close)
 
-        search_button = QPushButton("Search for Table")
-        search_button.setToolTip("Find additional cards with this table")
+        search_button = QPushButton("Search Table")
+        search_button.setToolTip("Search for other cards with the same table")
         search_button.clicked.connect(lambda: search_text(extract_html_text(self.parent.initial_html)))
 
         # Add the buttons to the horizontal layout
@@ -338,6 +331,7 @@ class CentralWidget(QFrame):
         vbox = QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.htmlEditor)
+        vbox.addWidget(self.webView)
 
         central_layout.addLayout(vbox, 40)
         central_layout.addWidget(self.webView, 60)
